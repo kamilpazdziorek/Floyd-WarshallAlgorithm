@@ -3,10 +3,39 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Floyd_WarshallAlgorithm"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        xmlns:local="clr-namespace:Floyd_WarshallAlgorithm.ViewModel"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         
+        mc:Ignorable="d"
+        Title="Floyd-Warshall" Height="450" Width="800"  ResizeMode="NoResize" Cursor="{Binding Cursor}">
+    <Window.DataContext>
+        <local:MainWindowViewModel/>
+    </Window.DataContext>
+    <Grid Name="myGrid">
+        <Grid Name="GridContainer" Margin="30,30,0,0" Height="255" Width="733" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <Canvas x:Name="DrawableCanvas" Height="{Binding ElementName=GridContainer, Path=ActualHeight}" Width="{Binding ElementName=GridContainer, Path=ActualWidth}" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseLeftButtonDown">
+                        <i:InvokeCommandAction Command="{Binding CanvasActionCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}" x:Name="interactifityFix2">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseMove">
+                        <i:InvokeCommandAction Command="{Binding MouseMoveCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseLeftButtonUp">
+                        <i:InvokeCommandAction Command="{Binding MouseLeftButtonUpCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </Canvas>
+        </Grid>
+        <Button Content="Dodaj &#xD;&#xA;Wierzchołek" HorizontalAlignment="Left" Margin="43,344,0,0" VerticalAlignment="Top" Width="116" Height="39" Command="{Binding AddVertexCommand, Mode=OneWay}"/>
+        <Button Content="Resetuj" HorizontalAlignment="Left" Margin="340,344,0,0" VerticalAlignment="Top" Width="116" Height="39" Command="{Binding ResetCommand, Mode=OneWay}" CommandParameter="{Binding ElementName=DrawableCanvas}"/>
+        <Button Content="Autorzy" HorizontalAlignment="Left" Margin="495,344,0,0" VerticalAlignment="Top" Width="60" Height="39" Command="{Binding AuthorsCommand, Mode=OneWay}"/>
+        <TextBox Text="{Binding CityName}" x:Name="NazwaWierzcholka" HorizontalAlignment="Left" Height="26" Margin="43,313,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="116" />
+        <Button Content="Dodaj Krawędź" HorizontalAlignment="Left" Margin="184,344,0,0" VerticalAlignment="Top" Width="116" Height="39" Command="{Binding AddEdgeCommand, Mode=OneWay}"/>
+        <TextBox Text="{Binding EdgeWeight}" x:Name="Waga" HorizontalAlignment="Left" Height="26" Margin="184,313,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="116"/>
+        <Button Content="Wyznacz macierz" HorizontalAlignment="Left" Margin="596,313,0,0" VerticalAlignment="Top" Width="127" Height="70" Command="{Binding CreateMatrixCommand, Mode=OneWay}"/>
     </Grid>
 </Window>
