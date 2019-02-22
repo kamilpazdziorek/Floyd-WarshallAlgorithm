@@ -1,8 +1,11 @@
-﻿using Floyd_WarshallAlgorithm.Model;
+﻿using Floyd_WarshallAlgorithm.Helpers;
+using Floyd_WarshallAlgorithm.Model;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,12 +14,9 @@ using System.Windows.Shapes;
 
 namespace Floyd_WarshallAlgorithm.ViewModel
 {
-    class MainWindowViewModel : INotifyPropertyChanged
+    public class MetroWindowViewModel : ViewModelBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
         #region fields
-
         CanvasState canvasState;
         List<Vertex> vertices;
         Vertex FirstVertex;
@@ -24,70 +24,96 @@ namespace Floyd_WarshallAlgorithm.ViewModel
         Vertex draggingVertext;
         Ellipse draggingEllipse;
         List<Line> draggingLines;
+        private Visibility _authorsGroupBoxVisibility;
+        private Cursor _cursor;
+        private SolidColorBrush _canvasBorder;
+        private double _minWeight;
+        private double _minHeight;
         private static double XPositionCliked;
         private static double YPositionCliked;
         private static double XDistanceToCenter = 0;
         private static double YDistanceToCenter = 0;
-
+        private static double WindowXPosition;
+        private static double WindowYPosition;
         #endregion
 
         #region ICommands
-
+        public ICommand ChangeAuthorsVisibilityCommand { get { return new RelayCommand(o => ChangeAuthorsVisibility()); }}
+        public ICommand ExitAppCommand { get { return new RelayCommand(o => ExitApp(o)); }}
         public ICommand AddVertexCommand { get { return new RelayCommand(o => AddVertex()); } }
+        public ICommand CanvasActionCommand { get { return new RelayCommand(o => CanvasAction(o)); } }
         public ICommand AddEdgeCommand { get { return new RelayCommand(o => AddEdge()); } }
         public ICommand ResetCommand { get { return new RelayCommand(o => Reset(o)); } }
-        public ICommand AuthorsCommand { get { return new RelayCommand(o => Authors()); } }
-        public ICommand CreateMatrixCommand { get { return new RelayCommand(o => CreateMatrix()); } }
-        public ICommand CanvasActionCommand { get { return new RelayCommand(o => CanvasAction(o)); } }
+        public ICommand LocationChangedCommand { get { return new RelayCommand(o => LocationChanged(o)); } }
+        public ICommand MouseLeftButtonUpCommand { get { return new RelayCommand(o => MouseLeftButtonUp()); } }
         public ICommand MouseMoveCommand { get { return new RelayCommand(o => MouseMove(o)); } }
-        public ICommand MouseLeftButtonUpCommand { get { return new RelayCommand(o => MouseLeftButtonUp(o)); } }
-
         #endregion
+        //public ICommand CreateMatrixCommand { get { return new RelayCommand(o => CreateMatrix()); } }
 
-        public MainWindowViewModel()
+        #region properise
+        public int WindowWidth { get; set; }
+        public string FirstColumnWidth { get; set; }
+        public ObservableCollection<int> NumbersExample { get; set; }
+        public ObservableCollection<string> CitiesExample { get; set; }
+        public Visibility AuthorsGroupBoxVisibility
         {
-            draggingLines = new List<Line>();
-            vertices = new List<Vertex>();
-            CityName = "Podaj miasto";
-            EdgeWeight = 1;
+            get { return _authorsGroupBoxVisibility; }
+            set { _authorsGroupBoxVisibility = value; OnPropertyChanged("AuthorsGroupBoxVisibility"); }
         }
-
-        #region propertisy
-
-        public string CityName { get; set; }
-        public int EdgeWeight { get; set; }
         public Cursor Cursor
         {
             get { return _cursor; }
             set { _cursor = value; OnPropertyChanged("Cursor"); }
         }
-        private Cursor _cursor;
 
+        public SolidColorBrush CanvasBorder
+        {
+            get { return _canvasBorder; }
+            set { _canvasBorder = value; OnPropertyChanged("CanvasBorder"); }
+        }
+
+        public string CityName { get; set; }
+        public int EdgeWeight { get; set; }
+        public double MinWeight
+        {
+            get { return _minWeight; }
+            set { _minWeight = value; OnPropertyChanged("MinWeight"); }
+        }
+        public double MinHeight
+        {
+            get { return _minHeight; }
+            set { _minHeight = value; OnPropertyChanged("MinHeight"); }
+        }
         #endregion
 
+        public MetroWindowViewModel()
+        {
+            WindowXPosition = 0;
+            WindowYPosition = 0;
+            FirstColumnWidth = "0,15*";
+            NumbersExample = Resources.NumbersExamples.numbers;
+            CitiesExample = Resources.CitiesExamples.Cities;
+            AuthorsGroupBoxVisibility = Visibility.Collapsed;
+            draggingLines = new List<Line>();
+            vertices = new List<Vertex>();
+            MinHeight = 770;
+            MinWeight = 1000;
+        }
+
         #region methods
-
-        protected void OnPropertyChanged(string info)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(info));
-        }
-
-        private void Authors()
-        {
-            View.AuthorsView authors = new View.AuthorsView();
-            authors.ShowDialog();
-        }
 
         private void AddVertex()
         {
             canvasState = CanvasState.ReadyToAddVertex;
             Cursor = Cursors.Cross;
+            CanvasBorder = Brushes.DeepSkyBlue;
         }
 
         private void AddEdge()
         {
             canvasState = CanvasState.ReadyToAddEdge;
             Cursor = Cursors.Cross;
+            CanvasBorder = Brushes.DeepSkyBlue;
         }
 
         private void Reset(object o)
@@ -98,13 +124,14 @@ namespace Floyd_WarshallAlgorithm.ViewModel
             SecondVertex = null;
             Cursor = Cursors.Arrow;
             (o as Canvas).Children.Clear();
-
         }
 
         private void CanvasAction(object obj)
         {
-            double XPosition = Mouse.GetPosition(Application.Current.MainWindow).X - 45;
-            double YPosition = Mouse.GetPosition(Application.Current.MainWindow).Y - 45;
+            Point point = (obj as Canvas).PointToScreen(new Point(0, 0));
+
+            double XPosition = Mouse.GetPosition(Application.Current.MainWindow).X  - 15;
+            double YPosition = Mouse.GetPosition(Application.Current.MainWindow).Y  - 15;
 
             XPositionCliked = XPosition;
             YPositionCliked = YPosition;
@@ -113,7 +140,7 @@ namespace Floyd_WarshallAlgorithm.ViewModel
             //zmiana pozycji wierzchołka
             if (canvasState == CanvasState.StartingValue)
             {
-                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition - x.CoordinatesX) <= 15 && Math.Abs(YPosition - x.CoordinatesY) <= 15);
+                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition - point.X - x.CoordinatesX + WindowXPosition) <= 15 && Math.Abs(YPosition - point.Y - x.CoordinatesY + WindowYPosition) <= 15);
                 if (vertex == null) return;
 
                 canvasState = CanvasState.DragingVertex;
@@ -133,26 +160,42 @@ namespace Floyd_WarshallAlgorithm.ViewModel
                     Fill = new SolidColorBrush(Colors.LightYellow)
                 };
                 (obj as Canvas).Children.Add(ellipse);
-                Canvas.SetLeft(ellipse, XPosition);
-                Canvas.SetTop(ellipse, YPosition);
+                Canvas.SetLeft(ellipse, XPosition -point.X + WindowXPosition);
+                Canvas.SetTop(ellipse, YPosition -point.Y + WindowYPosition);
                 Cursor = Cursors.Arrow;
-                Vertex vertex = new Vertex(XPosition, YPosition, CityName);
+                Vertex vertex = new Vertex(XPosition - point.X + WindowXPosition, YPosition - point.Y + WindowYPosition, CityName);
                 vertices.Add(vertex);
                 canvasState = CanvasState.StartingValue;
+                CanvasBorder = Brushes.White;
+
+                if (vertex.CoordinatesX + point.X - WindowXPosition> MinWeight)
+                {
+                    MinWeight = vertex.CoordinatesX + point.X + 40;
+                }
+                if (vertex.CoordinatesY + point.Y -WindowYPosition >MinHeight)
+                {
+                    MinHeight = vertex.CoordinatesY + point.Y + 50;
+                }
             }
 
             //dodanie krawędzi, pierwszy wierzchołek
             else if (canvasState == CanvasState.ReadyToAddEdge)
             {
-                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition - x.CoordinatesX) <= 15 && Math.Abs(YPosition - x.CoordinatesY) <= 15);
+                
+                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition -point.X - x.CoordinatesX + WindowXPosition) <= 15 && Math.Abs(YPosition -point.Y - x.CoordinatesY + WindowYPosition) <= 15);
                 if (vertex == null) return;
 
                 foreach (var item in (obj as Canvas).Children)
                 {
                     var FocusedEllipse = item as Ellipse;
-                    if (FocusedEllipse != null && Math.Abs(XPosition - Canvas.GetLeft(FocusedEllipse)) <= 15 && Math.Abs(YPosition - Canvas.GetTop(FocusedEllipse)) <= 15)
+                    if (FocusedEllipse != null)
                     {
-                        FocusedEllipse.Stroke = new SolidColorBrush(Colors.Red);
+                        var a = Canvas.GetLeft(FocusedEllipse);
+                        if (FocusedEllipse != null && Math.Abs(XPosition - point.X - Canvas.GetLeft(FocusedEllipse) + WindowXPosition) <= 15 && Math.Abs(YPosition - point.Y - Canvas.GetTop(FocusedEllipse) + WindowYPosition) <= 15)
+                        {
+
+                            FocusedEllipse.Stroke = new SolidColorBrush(Colors.DeepSkyBlue);
+                        }
                     }
 
                 }
@@ -164,20 +207,23 @@ namespace Floyd_WarshallAlgorithm.ViewModel
             //drugi wierzcholek
             else if (canvasState == CanvasState.FirstSelected)
             {
-                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition - x.CoordinatesX) <= 15 && Math.Abs(YPosition - x.CoordinatesY) <= 15);
+                Vertex vertex = vertices.FirstOrDefault(x => Math.Abs(XPosition - point.X - x.CoordinatesX + WindowXPosition) <= 15 && Math.Abs(YPosition - point.Y - x.CoordinatesY + WindowYPosition) <= 15);
                 if (vertex == null) return;
                 SecondVertex = vertex;
 
                 foreach (var item in (obj as Canvas).Children)
                 {
                     var FocusedEllipse = item as Ellipse;
-                    if (FocusedEllipse != null && Canvas.GetTop(FocusedEllipse) == FirstVertex.CoordinatesY && Canvas.GetLeft(FocusedEllipse) == FirstVertex.CoordinatesX)
+                    if (FocusedEllipse != null)
                     {
-                        FocusedEllipse.Stroke = new SolidColorBrush(Colors.BurlyWood);
+                        if (FocusedEllipse != null && Canvas.GetTop(FocusedEllipse) == FirstVertex.CoordinatesY && Canvas.GetLeft(FocusedEllipse) == FirstVertex.CoordinatesX)
+                        {
+                            FocusedEllipse.Stroke = new SolidColorBrush(Colors.BurlyWood);
+                            break;
+                        }
                     }
 
                 }
-
 
                 Edge edge = new Edge(EdgeWeight, FirstVertex, SecondVertex);
                 if (vertices.FirstOrDefault(x => x == FirstVertex).Edges.FirstOrDefault(x => x.EndVertex == SecondVertex) == null)
@@ -189,8 +235,8 @@ namespace Floyd_WarshallAlgorithm.ViewModel
                         Stroke = Brushes.Blue,
                         StrokeThickness = 2,
                         X1 = FirstVertex.CoordinatesX + 15,
-                        X2 = SecondVertex.CoordinatesX + 15,
-                        Y1 = FirstVertex.CoordinatesY + 15,
+                        X2 = SecondVertex.CoordinatesX  + 15,
+                        Y1 = FirstVertex.CoordinatesY  +15 ,
                         Y2 = SecondVertex.CoordinatesY + 15
                     };
                     Canvas.SetZIndex(line, -1);
@@ -200,47 +246,69 @@ namespace Floyd_WarshallAlgorithm.ViewModel
                 Cursor = Cursors.Arrow;
                 FirstVertex = null;
                 SecondVertex = null;
+                CanvasBorder = Brushes.White;
                 canvasState = CanvasState.StartingValue;
             }
+        }
+
+        private void LocationChanged(object obj)
+        {
+            WindowXPosition = (obj as Window).Left;
+            WindowYPosition = (obj as Window).Top;
+        }
+
+        private void ChangeAuthorsVisibility()
+        {
+            if (AuthorsGroupBoxVisibility == Visibility.Visible)
+                AuthorsGroupBoxVisibility = Visibility.Collapsed;
+            else
+                 AuthorsGroupBoxVisibility = Visibility.Visible;
 
         }
 
-        private void CreateMatrix()
+        private void ExitApp(object obj)
         {
-            int[,] WeightMatrix = new int[vertices.Count, vertices.Count];
-            string[] NamesMatrix = new string[vertices.Count];
+            (obj as Window).Close();
+        }
 
-            for (int i = 0; i < vertices.Count; i++)
+        private void MouseLeftButtonUp()
+        {
+            if (canvasState == CanvasState.DragingVertex)
             {
-                NamesMatrix[i] = vertices[i].Name;
-                for (int j = 0; j < vertices.Count; j++)
+                if (draggingEllipse != null)
                 {
-                    WeightMatrix[i, j] = 0;
+                    draggingEllipse.Stroke = new SolidColorBrush(Colors.BurlyWood);
+                    Canvas.SetZIndex(draggingEllipse, 0);
                 }
+                draggingLines.Clear();
+                draggingVertext = null;
+                draggingEllipse = null;
+                canvasState = CanvasState.StartingValue;
             }
-
-            //dodanie wag do macierzy
         }
 
         private void MouseMove(object obj)
         {
             if (canvasState == CanvasState.DragingVertex)
             {
-                double CurrentXPosition = Mouse.GetPosition(Application.Current.MainWindow).X - 45;
-                double CurrentYPosition = Mouse.GetPosition(Application.Current.MainWindow).Y - 45;
+                double CurrentXPosition = Mouse.GetPosition(Application.Current.MainWindow).X - 15;
+                double CurrentYPosition = Mouse.GetPosition(Application.Current.MainWindow).Y - 15;
+                Point point = (obj as Canvas).PointToScreen(new Point(0, 0));
 
-                if (CurrentXPosition > 0 && CurrentXPosition < 700 && CurrentYPosition > 0 && CurrentYPosition < 230)
+                if (CurrentXPosition > point.X -WindowXPosition && CurrentXPosition < point.X + (obj as Canvas).ActualWidth -WindowXPosition && CurrentYPosition > point.Y -WindowYPosition && CurrentYPosition < point.Y + (obj as Canvas).ActualHeight -WindowYPosition)
                 {
                     if (draggingEllipse == null)
                     {
                         double XBeforeMove = 0;
                         double YBeforeMove = 0;
+
                         foreach (var item in (obj as Canvas).Children)
                         {
                             var FocusedEllipse = item as Ellipse;
-                            if (FocusedEllipse != null && Math.Abs(CurrentXPosition - Canvas.GetLeft(FocusedEllipse)) <= 15 && Math.Abs(CurrentYPosition - Canvas.GetTop(FocusedEllipse)) <= 15)
+                            //TODO
+                            if (FocusedEllipse != null && Math.Abs(CurrentXPosition - Canvas.GetLeft(FocusedEllipse) - point.X + WindowXPosition) <= 15 && Math.Abs(CurrentYPosition - Canvas.GetTop(FocusedEllipse) - point.Y + WindowYPosition) <= 15)
                             {
-                                FocusedEllipse.Stroke = new SolidColorBrush(Colors.Red);
+                                FocusedEllipse.Stroke = new SolidColorBrush(Colors.DeepSkyBlue);
                                 XBeforeMove = Canvas.GetLeft(FocusedEllipse);
                                 YBeforeMove = Canvas.GetTop(FocusedEllipse);
                                 Canvas.SetZIndex(FocusedEllipse, 1);
@@ -305,22 +373,6 @@ namespace Floyd_WarshallAlgorithm.ViewModel
             }
         }
 
-        private void MouseLeftButtonUp(object o)
-        {
-            if (canvasState == CanvasState.DragingVertex)
-            {
-                if (draggingEllipse != null)
-                {
-                    draggingEllipse.Stroke = new SolidColorBrush(Colors.BurlyWood);
-                    Canvas.SetZIndex(draggingEllipse, 0);
-                }
-                draggingLines.Clear();
-                draggingVertext = null;
-                draggingEllipse = null;
-                canvasState = CanvasState.StartingValue;
-            }
-        }
-
         private enum CanvasState
         {
             StartingValue,
@@ -332,5 +384,6 @@ namespace Floyd_WarshallAlgorithm.ViewModel
         }
 
         #endregion
+
     }
 }

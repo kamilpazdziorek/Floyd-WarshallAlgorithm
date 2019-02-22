@@ -1,0 +1,112 @@
+﻿<Controls:MetroWindow x:Class="Floyd_WarshallAlgorithm.Metro"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Floyd_WarshallAlgorithm.ViewModel"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        mc:Ignorable="d"
+        Cursor="{Binding Cursor}"
+        Title="Floyd-Warshall Algorithm" WindowStyle="None"  WindowState="Maximized" MinHeight="{Binding MinHeight}" MinWidth="{Binding MinWeight}" Name="window" Width="{Binding WindowWidth, Mode=TwoWay}">
+
+    <Controls:MetroWindow.Resources>
+        <ResourceDictionary>
+            <local:MetroWindowViewModel x:Key="DataContextKey"/>
+        </ResourceDictionary>
+    </Controls:MetroWindow.Resources>
+    <Controls:MetroWindow.DataContext>
+        <local:MetroWindowViewModel/>
+    </Controls:MetroWindow.DataContext>
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="LocationChanged">
+            <i:InvokeCommandAction Command="{Binding LocationChangedCommand}" CommandParameter="{Binding ElementName=window}" x:Name="wgefa">
+            </i:InvokeCommandAction>
+        </i:EventTrigger>
+        <i:EventTrigger EventName="MouseMove">
+            <i:InvokeCommandAction Command="{Binding MouseMoveCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}">
+            </i:InvokeCommandAction>
+        </i:EventTrigger>
+        <i:EventTrigger EventName="MouseLeftButtonUp">
+            <i:InvokeCommandAction Command="{Binding MouseLeftButtonUpCommand}">
+            </i:InvokeCommandAction>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="220" Width="{Binding FirstColumnWidth}"/>
+            <ColumnDefinition Name="SecondColumn" Width=" 0,85*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0" Grid.ColumnSpan="2">
+            <Border BorderThickness="0,0,0,2" BorderBrush="{DynamicResource MaterialDesignDivider}">
+                <Menu IsMainMenu="True">
+                    <MenuItem Header="_Plik" Height="30">
+                        <MenuItem Header="Zamknij" Command="{Binding ExitAppCommand}" CommandParameter="{Binding ElementName=window}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="ExitToApp" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </MenuItem>
+                </Menu>
+            </Border>
+        </DockPanel>
+        <Grid Grid.Column="0" Grid.Row="1">
+            <materialDesign:DialogHost>
+                <materialDesign:DrawerHost  VerticalAlignment="Stretch" BorderThickness="2,0,2,2" BorderBrush="{DynamicResource MaterialDesignDivider}">
+                    <StackPanel Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <TextBlock FontSize="15" Margin="0,20,0,10" HorizontalAlignment="Left">Wierzchołek</TextBlock>
+                        <Separator/>
+                        <ComboBox ItemsSource="{Binding CitiesExample}" SelectedItem="{Binding CityName}" FontSize="13" Margin="20,20,10,0" IsEditable="True" Text="Podaj nazwę wierzchołka"></ComboBox>
+                        <Button Command="{Binding AddVertexCommand}"  HorizontalAlignment="Stretch" Margin="20,10,10,10">Dodaj</Button>
+                        <TextBlock FontSize="15" Margin="0,40,0,10" HorizontalAlignment="Left">Krawędź</TextBlock>
+                        <Separator/>
+                        <ComboBox ItemsSource="{Binding NumbersExample}" SelectedItem="{Binding EdgeWeight}" FontSize="13" Margin="20,20,10,0" IsEditable="True" Text="Podaj wagę krawędzi"></ComboBox>
+                        <Button Command="{Binding AddEdgeCommand}"  HorizontalAlignment="Stretch" Margin="20,10,10,10">Dodaj</Button>
+                        <TextBlock FontSize="15" Margin="0,40,0,10" HorizontalAlignment="Left">Pozostałe opcje</TextBlock>
+                        <Separator/>
+                        <Button ForceCursor="True"  HorizontalAlignment="Stretch" Margin="20,30,10,00">Wyznacz macierz</Button>
+                        <Button Command="{Binding ResetCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}"  HorizontalAlignment="Stretch" Margin="20,10,10,10">Reset</Button>
+                        <Button Command="{Binding ChangeAuthorsVisibilityCommand}"  HorizontalAlignment="Stretch" Margin="20,0,10,10">Autorzy</Button>
+                        <GroupBox Name="Authors" Visibility="{Binding AuthorsGroupBoxVisibility}"  Margin="20,20,10,10">
+                            <StackPanel>
+                                <Label>Kamil Paździorek</Label>
+                                <Label>Michał Kocisz</Label>
+                                <Label>Grzegorz Jarząbek</Label>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </materialDesign:DrawerHost>
+        </materialDesign:DialogHost>
+        </Grid>
+        
+        <Grid Grid.Column="1" Grid.Row="1">
+            <Border Margin="10" BorderBrush="{Binding CanvasBorder}"  BorderThickness="3">
+                <Canvas Name="DrawableCanvas" Background="LightGray" Panel.ZIndex="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseLeftButtonDown">
+                        <i:InvokeCommandAction Command="{Binding CanvasActionCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}" x:Name="interactifityFix2">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseMove">
+                        <i:InvokeCommandAction Command="{Binding MouseMoveCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseLeftButtonUp">
+                        <i:InvokeCommandAction Command="{Binding MouseLeftButtonUpCommand}" CommandParameter="{Binding ElementName=DrawableCanvas}">
+                        </i:InvokeCommandAction>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </Border>
+        </Grid>
+    </Grid>
+</Controls:MetroWindow>
